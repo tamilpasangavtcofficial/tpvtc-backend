@@ -1,5 +1,6 @@
 const app = require('../src/app');
 const { sequelize, connectDB } = require('../src/config/db');
+require('mysql2'); // Explicitly required for Vercel's dependency tracer
 
 // Database connection logic for serverless environment
 const connectToDatabase = async () => {
