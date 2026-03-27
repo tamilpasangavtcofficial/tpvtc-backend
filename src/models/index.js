@@ -6,6 +6,7 @@ const EventSlot = require('./EventSlot');
 const BookingRequest = require('./BookingRequest');
 const HeaderImage = require('./HeaderImage');
 const GalleryImage = require('./GalleryImage');
+const Supporter = require('./Supporter');
 
 // Associations
 BookingRequest.belongsTo(EventSlot, { foreignKey: 'event_slot_id' });
@@ -22,5 +23,6 @@ module.exports = {
     EventSlot,
     BookingRequest,
     HeaderImage,
-    GalleryImage
+    GalleryImage,
+    Supporter
 };
