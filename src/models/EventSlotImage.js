@@ -7,6 +7,10 @@ const EventSlotImage = sequelize.define('EventSlotImage', {
         primaryKey: true,
         autoIncrement: true
     },
+    event_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
     slot_url: {
         type: DataTypes.STRING,
         allowNull: false
