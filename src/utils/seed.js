@@ -13,11 +13,11 @@ const seedDB = async () => {
         // Seed Initial Developer
         const devRole = await UserRole.findOne({ where: { role: 'developer' } });
         const hashedPassword = await bcrypt.hash('Bavi@2003', 10);
-        
+
         await User.findOrCreate({
-            where: { email: 'skbavi61@gmail.com' },
+            where: { username: 'skbavi' },
             defaults: {
-                username: 'skbavi',
+                email: 'skbavi@tpvtc.com',
                 password: hashedPassword,
                 role_id: devRole.id
             }
