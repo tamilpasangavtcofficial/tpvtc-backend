@@ -208,6 +208,7 @@ router.get('/attending/:event_id', async (req, res) => {
 router.post('/official/setup', auth, adminOnly, async (req, res) => {
     const { sector_id, event_id, slot_url, slot_name, from = 1, to = 20 } = req.body;
     try {
+        const { Op } = require('sequelize');
         const start = parseInt(from);
         const end = parseInt(to);
         const eventId = parseInt(event_id);
@@ -216,12 +217,16 @@ router.post('/official/setup', auth, adminOnly, async (req, res) => {
             return res.status(400).json({ message: 'Invalid setup parameters' });
         }
 
+        // 1. Prepare the exact slot numbers for this sector
+        const preciseLots = [];
+        for (let i = start; i <= end; i++) preciseLots.push(i.toString());
+
         let sector;
         if (sector_id) {
             // EDIT MODE: Update existing sector by its unique ID
             sector = await EventSlotImage.findByPk(sector_id);
             if (!sector) return res.status(404).json({ message: 'Target sector not found' });
-            await sector.update({ slot_url, slot_name, total_slots: (end - start + 1) });
+            await sector.update({ slot_url, slot_name, total_slots: (end - start + 1), event_id: eventId });
         } else {
             // NEW MODE: Create or find by properties
             const [newSector, created] = await EventSlotImage.findOrCreate({
@@ -232,11 +237,26 @@ router.post('/official/setup', auth, adminOnly, async (req, res) => {
             if (!created) await sector.update({ total_slots: (end - start + 1) });
         }
 
-        // 5. REFRESH Slots for this specific sector only
-        // This allows us to re-run "Edit Config" safely for one sector without touching others.
+        // 2. COLLISION CHECK: Are any of these slots already used by ANOTHER sector in this event?
+        const collisions = await EventSlot.findAll({
+            where: {
+                event_id: eventId,
+                slot_no: { [Op.in]: preciseLots },
+                slot_image_id: { [Op.ne]: sector.id } // Different sector
+            }
+        });
+
+        if (collisions.length > 0) {
+            const list = collisions.slice(0, 3).map(s => `#${s.slot_no}`).join(', ');
+            return res.status(400).json({ 
+                message: `Overlap detected! Slots ${list}${collisions.length > 3 ? '...' : ''} are already assigned to another parking zone.` 
+            });
+        }
+
+        // 3. REFRESH Slots for this specific sector only
         await EventSlot.destroy({ where: { slot_image_id: sector.id } });
 
-        // 6. Batch Create the new slots
+        // 4. Batch Create the new slots
         const slotsToCreate = preciseLots.map(no => ({
             slot_no: no,
             event_id: eventId,
