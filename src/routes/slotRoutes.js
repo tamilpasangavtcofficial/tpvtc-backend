@@ -339,4 +339,23 @@ router.post('/assign/:slot_id', auth, adminOnly, async (req, res) => {
     }
 });
 
+// Update just the Sector Name (New)
+router.patch('/official/sector/name/:id', auth, adminOnly, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { slot_name } = req.body;
+        if (!slot_name) return res.status(400).json({ message: 'Name is required' });
+        
+        const sector = await EventSlotImage.findByPk(id);
+        if (!sector) return res.status(404).json({ message: 'Sector not found' });
+        
+        await sector.update({ slot_name });
+        res.json({ message: 'Sector name updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Failed to update sector name' });
+    }
+});
+
 module.exports = router;
+
