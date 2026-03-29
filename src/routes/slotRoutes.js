@@ -211,22 +211,26 @@ router.post('/official/setup', async (req, res) => {
         const start = parseInt(from);
         const end = parseInt(to);
 
-        // 1. Create or Update Slot Image entry for this URL
+        // 1. Create or Update Slot Image entry for this URL + NAME (to keep sectors distinct)
         const [slotImage, created] = await EventSlotImage.findOrCreate({
-            where: { slot_url },
-            defaults: { total_slots: (end - start + 1), slot_name }
+            where: { slot_url, slot_name },
+            defaults: { total_slots: (end - start + 1) }
         });
 
         if (!created) {
-            await slotImage.update({ slot_name, total_slots: (end - start + 1) });
+            await slotImage.update({ total_slots: (end - start + 1) });
         }
 
         // 2. Clean up existing slots in THIS SPECIFIC RANGE for this event
         const { Op } = require('sequelize');
+        // We use an array of exact lot numbers to avoid lexical range comparison bugs
+        const preciseLots = [];
+        for (let i = start; i <= end; i++) preciseLots.push(i.toString());
+
         await EventSlot.destroy({ 
             where: { 
                 event_id,
-                slot_no: { [Op.between]: [start.toString(), end.toString()] }
+                slot_no: { [Op.in]: preciseLots }
             } 
         });
 
