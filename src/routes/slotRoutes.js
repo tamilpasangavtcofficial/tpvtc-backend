@@ -1,6 +1,7 @@
 const express = require('express');
 const { EventSlot, EventSlotImage, BookingRequest, AttendingEventSlot, User } = require('../models');
 const { auth, adminOnly } = require('../middleware/auth');
+const { Op } = require('sequelize');
 const router = express.Router();
 
 // Get Slots for an Event
@@ -208,7 +209,6 @@ router.get('/attending/:event_id', async (req, res) => {
 router.post('/official/setup', auth, adminOnly, async (req, res) => {
     const { sector_id, event_id, slot_url, slot_name, from = 1, to = 20 } = req.body;
     try {
-        const { Op } = require('sequelize');
         const start = parseInt(from);
         const end = parseInt(to);
         const eventId = parseInt(event_id);
@@ -297,18 +297,7 @@ router.delete('/official/sector/:id', auth, adminOnly, async (req, res) => {
         res.status(500).json({ message: 'Failed to remove sector' });
     }
 });
-// Get Slots for an Official Event
-router.get('/:event_id', async (req, res) => {
-    try {
-        const slots = await EventSlot.findAll({ 
-            where: { event_id: req.params.event_id },
-            include: [{ model: EventSlotImage }]
-        });
-        res.json(slots);
-    } catch (err) {
-        res.status(500).json({ message: 'Server error fetching slots' });
-    }
-});
+// Clear/Assign Manual Overrides
 
 // Manual Clear Slot
 router.post('/clear/:slot_id', auth, adminOnly, async (req, res) => {
