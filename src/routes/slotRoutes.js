@@ -180,12 +180,17 @@ router.get('/requests/logs', async (req, res) => {
 });
 
 // Setup/Update attending slot info
-router.post('/attending/setup', async (req, res) => {
+router.post('/attending/setup', auth, adminOnly, async (req, res) => {
     try {
         const { event_id, slot_number, slot_url } = req.body;
+        const numericEventId = parseInt(event_id);
+        
+        if (!numericEventId) {
+            return res.status(400).json({ error: 'Valid Event ID is required' });
+        }
         
         // Find existing record for this event
-        let record = await AttendingEventSlot.findOne({ where: { event_id } });
+        let record = await AttendingEventSlot.findOne({ where: { event_id: numericEventId } });
         
         if (record) {
             // Update existing
@@ -196,7 +201,7 @@ router.post('/attending/setup', async (req, res) => {
         } else {
             // Create new
             record = await AttendingEventSlot.create({
-                event_id,
+                event_id: numericEventId,
                 slot_number,
                 slot_url
             });
