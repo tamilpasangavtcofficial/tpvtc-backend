@@ -179,17 +179,32 @@ router.get('/requests/logs', async (req, res) => {
     }
 });
 
-// Upsert attending slot info
-router.post('/attending/upsert', async (req, res) => {
+// Setup/Update attending slot info
+router.post('/attending/setup', async (req, res) => {
     try {
         const { event_id, slot_number, slot_url } = req.body;
-        const [slot, created] = await AttendingEventSlot.upsert({
-            event_id,
-            slot_number,
-            slot_url
-        });
-        res.json({ message: 'Attending slot updated', slot });
+        
+        // Find existing record for this event
+        let record = await AttendingEventSlot.findOne({ where: { event_id } });
+        
+        if (record) {
+            // Update existing
+            await record.update({
+                slot_number,
+                slot_url
+            });
+        } else {
+            // Create new
+            record = await AttendingEventSlot.create({
+                event_id,
+                slot_number,
+                slot_url
+            });
+        }
+        
+        res.json({ message: 'Attending slot updated', slot: record });
     } catch (err) {
+        console.error('ERROR IN /attending/setup:', err);
         res.status(500).json({ error: 'Failed to update attending slot' });
     }
 });

@@ -9,7 +9,8 @@ const AttendingEventSlot = sequelize.define('AttendingEventSlot', {
     },
     event_id: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        unique: true
     },
     slot_url: {
         type: DataTypes.STRING,
