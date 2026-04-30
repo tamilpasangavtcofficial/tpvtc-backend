@@ -8,7 +8,7 @@ const startServer = async () => {
     await connectDB();
     
     // sync models with database
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ alter: true });
     console.log('Database schema synchronized');
     
     await seedDB();
