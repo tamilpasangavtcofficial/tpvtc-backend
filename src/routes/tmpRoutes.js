@@ -54,7 +54,26 @@ const MOCK_DATA = {
 const fetchTMP = async (endpoint, mockKey) => {
     const targetUrl = `https://api.truckersmp.com/v2${endpoint}`;
     
-    // List of proxies to try
+    // First try direct fetch (Node.js doesn't need CORS proxies)
+    try {
+        console.log(`Trying direct fetch: ${targetUrl}`);
+        const directResponse = await fetch(targetUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' }
+        });
+        const text = await directResponse.text();
+        
+        if (text && !text.includes('Just a moment') && text.trim().startsWith('{')) {
+            const data = JSON.parse(text);
+            if (data && !data.error) {
+                console.info(`✓ Successfully fetched directly`);
+                return data;
+            }
+        }
+    } catch (e) {
+        console.warn(`Direct fetch failed:`, e.message);
+    }
+
+    // List of proxies to try as fallback
     const proxies = [
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
         `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
