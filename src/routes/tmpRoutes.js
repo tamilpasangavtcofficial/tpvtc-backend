@@ -53,55 +53,60 @@ const MOCK_DATA = {
 // Helper for TMP Requests with Proxy Rotation
 const fetchTMP = async (endpoint, mockKey) => {
     const targetUrl = `https://api.truckersmp.com/v2${endpoint}`;
+    console.log(`[TMP] Fetching target: ${targetUrl}`);
     
-    // First try direct fetch (Node.js doesn't need CORS proxies)
+    // First try direct fetch
     try {
-        console.log(`Trying direct fetch: ${targetUrl}`);
+        console.log(`[TMP] Attempting direct fetch...`);
         const directResponse = await fetch(targetUrl, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' }
         });
         const text = await directResponse.text();
+        console.log(`[TMP] Direct fetch status: ${directResponse.status}, body length: ${text.length}`);
         
         if (text && !text.includes('Just a moment') && text.trim().startsWith('{')) {
             const data = JSON.parse(text);
             if (data && !data.error) {
-                console.info(`✓ Successfully fetched directly`);
+                console.info(`[TMP] ✓ Successfully fetched directly`);
                 return data;
             }
+        } else {
+            console.log(`[TMP] Direct fetch rejected. Response preview: ${text.substring(0, 150)}`);
         }
     } catch (e) {
-        console.warn(`Direct fetch failed:`, e.message);
+        console.warn(`[TMP] Direct fetch error:`, e.message);
     }
 
     // List of proxies to try as fallback
     const proxies = [
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
         `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://thingproxy.freeboard.io/fetch/${targetUrl}`
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
     ];
 
     for (const proxyUrl of proxies) {
         try {
-            console.log(`Trying proxy: ${proxyUrl.substring(0, 50)}...`);
+            console.log(`[TMP] Trying proxy: ${new URL(proxyUrl).hostname}...`);
             const response = await fetch(proxyUrl, {
                 headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' }
             });
             const text = await response.text();
+            console.log(`[TMP] Proxy ${new URL(proxyUrl).hostname} status: ${response.status}`);
             
             if (text && !text.includes('Just a moment') && text.trim().startsWith('{')) {
                 const data = JSON.parse(text);
                 if (data && !data.error) {
-                    console.info(`✓ Successfully fetched via proxy`);
+                    console.info(`[TMP] ✓ Successfully fetched via proxy`);
                     return data;
                 }
             }
         } catch (e) {
-            console.warn(`Proxy failed:`, e.message);
+            console.warn(`[TMP] Proxy error:`, e.message);
         }
     }
 
     // Final Fallback: Mock Data
-    console.info(`Using MOCK DATA for ${endpoint}`);
+    console.info(`[TMP] Using MOCK DATA for ${endpoint}`);
     return MOCK_DATA[mockKey] || { error: true, message: "No data available" };
 };
 
