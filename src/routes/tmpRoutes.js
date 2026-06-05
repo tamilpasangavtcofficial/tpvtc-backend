@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 
 const TMP_BASE_URL = 'https://api.truckersmp.com/v2';
 const VTC_ID = process.env.VTC_ID || '73933';
@@ -50,31 +51,28 @@ const MOCK_DATA = {
     }
 };
 
-// Helper for TMP Requests with Proxy Rotation
+// Helper for TMP Requests with Proxy Rotation using Axios
 const fetchTMP = async (endpoint, mockKey) => {
     const targetUrl = `https://api.truckersmp.com/v2${endpoint}`;
     console.log(`[TMP] Fetching target: ${targetUrl}`);
     
-    // First try direct fetch
+    const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' };
+
+    // First try direct fetch using Axios
     try {
-        console.log(`[TMP] Attempting direct fetch...`);
-        const directResponse = await fetch(targetUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' }
-        });
-        const text = await directResponse.text();
-        console.log(`[TMP] Direct fetch status: ${directResponse.status}, body length: ${text.length}`);
+        console.log(`[TMP] Attempting direct fetch via Axios...`);
+        const response = await axios.get(targetUrl, { headers, timeout: 8000 });
+        console.log(`[TMP] Direct fetch status: ${response.status}`);
         
-        if (text && !text.includes('Just a moment') && text.trim().startsWith('{')) {
-            const data = JSON.parse(text);
-            if (data && !data.error) {
-                console.info(`[TMP] ✓ Successfully fetched directly`);
-                return data;
-            }
-        } else {
-            console.log(`[TMP] Direct fetch rejected. Response preview: ${text.substring(0, 150)}`);
+        if (response.data && !response.data.error) {
+            console.info(`[TMP] ✓ Successfully fetched directly`);
+            return response.data;
         }
     } catch (e) {
         console.warn(`[TMP] Direct fetch error:`, e.message);
+        if (e.response && e.response.data) {
+            console.warn(`[TMP] Cloudflare/Server response preview:`, String(e.response.data).substring(0, 150));
+        }
     }
 
     // List of proxies to try as fallback
@@ -86,19 +84,14 @@ const fetchTMP = async (endpoint, mockKey) => {
 
     for (const proxyUrl of proxies) {
         try {
-            console.log(`[TMP] Trying proxy: ${new URL(proxyUrl).hostname}...`);
-            const response = await fetch(proxyUrl, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36' }
-            });
-            const text = await response.text();
-            console.log(`[TMP] Proxy ${new URL(proxyUrl).hostname} status: ${response.status}`);
+            const host = new URL(proxyUrl).hostname;
+            console.log(`[TMP] Trying proxy: ${host}...`);
+            const response = await axios.get(proxyUrl, { headers, timeout: 8000 });
+            console.log(`[TMP] Proxy ${host} status: ${response.status}`);
             
-            if (text && !text.includes('Just a moment') && text.trim().startsWith('{')) {
-                const data = JSON.parse(text);
-                if (data && !data.error) {
-                    console.info(`[TMP] ✓ Successfully fetched via proxy`);
-                    return data;
-                }
+            if (response.data && !response.data.error) {
+                console.info(`[TMP] ✓ Successfully fetched via proxy`);
+                return response.data;
             }
         } catch (e) {
             console.warn(`[TMP] Proxy error:`, e.message);
