@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Magazine, MagazineNews } = require('../models');
-const { verifyToken, isAdmin } = require('../middleware/auth');
+const { auth, adminOnly } = require('../middleware/auth');
 
 // Public: Get all published magazines
 router.get('/', async (req, res) => {
@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 // Admin: Get all magazines (published and unpublished)
-router.get('/admin', verifyToken, isAdmin, async (req, res) => {
+router.get('/admin', auth, adminOnly, async (req, res) => {
     try {
         const magazines = await Magazine.findAll({
             order: [['createdAt', 'DESC']],
@@ -32,37 +32,18 @@ router.get('/admin', verifyToken, isAdmin, async (req, res) => {
     }
 });
 
-// Public: Get a specific published magazine by ID
-router.get('/:id', async (req, res) => {
-    try {
-        const magazine = await Magazine.findOne({
-            where: { id: req.params.id, published: true },
-            include: [{ model: MagazineNews, as: 'news' }]
-        });
-        if (!magazine) return res.status(404).json({ error: 'Magazine not found' });
-        
-        // Sort news by order_index
-        magazine.news.sort((a, b) => a.order_index - b.order_index);
-        
-        res.json(magazine);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error fetching magazine' });
-    }
-});
-
-// Admin: Get a specific magazine by ID
-router.get('/admin/:id', verifyToken, isAdmin, async (req, res) => {
+// Admin: Get a specific magazine by ID (admin route MUST come before the public /:id route)
+router.get('/admin/:id', auth, adminOnly, async (req, res) => {
     try {
         const magazine = await Magazine.findOne({
             where: { id: req.params.id },
             include: [{ model: MagazineNews, as: 'news' }]
         });
         if (!magazine) return res.status(404).json({ error: 'Magazine not found' });
-        
+
         // Sort news by order_index
         magazine.news.sort((a, b) => a.order_index - b.order_index);
-        
+
         res.json(magazine);
     } catch (err) {
         console.error(err);
@@ -70,8 +51,43 @@ router.get('/admin/:id', verifyToken, isAdmin, async (req, res) => {
     }
 });
 
+// Admin: Update news (MUST come before /:id routes to avoid conflict)
+router.put('/news/:newsId', auth, adminOnly, async (req, res) => {
+    try {
+        const { topic, sub_topic, content, images, order_index } = req.body;
+        const news = await MagazineNews.findByPk(req.params.newsId);
+        if (!news) return res.status(404).json({ error: 'News not found' });
+
+        if (topic !== undefined) news.topic = topic;
+        if (sub_topic !== undefined) news.sub_topic = sub_topic;
+        if (content !== undefined) news.content = content;
+        if (images !== undefined) news.images = images;
+        if (order_index !== undefined) news.order_index = order_index;
+
+        await news.save();
+        res.json(news);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error updating news' });
+    }
+});
+
+// Admin: Delete news (MUST come before /:id routes to avoid conflict)
+router.delete('/news/:newsId', auth, adminOnly, async (req, res) => {
+    try {
+        const news = await MagazineNews.findByPk(req.params.newsId);
+        if (!news) return res.status(404).json({ error: 'News not found' });
+
+        await news.destroy();
+        res.json({ message: 'News deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error deleting news' });
+    }
+});
+
 // Admin: Create a new magazine
-router.post('/', verifyToken, isAdmin, async (req, res) => {
+router.post('/', auth, adminOnly, async (req, res) => {
     try {
         const { month_year, template } = req.body;
         if (!month_year) return res.status(400).json({ error: 'month_year is required' });
@@ -92,7 +108,7 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
 });
 
 // Admin: Update a magazine (template, publish status)
-router.put('/:id', verifyToken, isAdmin, async (req, res) => {
+router.put('/:id', auth, adminOnly, async (req, res) => {
     try {
         const { month_year, template, published } = req.body;
         const magazine = await Magazine.findByPk(req.params.id);
@@ -111,7 +127,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
 });
 
 // Admin: Delete a magazine
-router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
+router.delete('/:id', auth, adminOnly, async (req, res) => {
     try {
         const magazine = await Magazine.findByPk(req.params.id);
         if (!magazine) return res.status(404).json({ error: 'Magazine not found' });
@@ -124,11 +140,11 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
 });
 
 // Admin: Add news to a magazine
-router.post('/:id/news', verifyToken, isAdmin, async (req, res) => {
+router.post('/:id/news', auth, adminOnly, async (req, res) => {
     try {
         const magazine_id = req.params.id;
         const { topic, sub_topic, content, images, order_index } = req.body;
-        
+
         if (!topic || !content) return res.status(400).json({ error: 'topic and content are required' });
 
         const magazine = await Magazine.findByPk(magazine_id);
@@ -150,38 +166,22 @@ router.post('/:id/news', verifyToken, isAdmin, async (req, res) => {
     }
 });
 
-// Admin: Update news
-router.put('/news/:newsId', verifyToken, isAdmin, async (req, res) => {
+// Public: Get a specific published magazine by ID
+router.get('/:id', async (req, res) => {
     try {
-        const { topic, sub_topic, content, images, order_index } = req.body;
-        const news = await MagazineNews.findByPk(req.params.newsId);
-        if (!news) return res.status(404).json({ error: 'News not found' });
+        const magazine = await Magazine.findOne({
+            where: { id: req.params.id, published: true },
+            include: [{ model: MagazineNews, as: 'news' }]
+        });
+        if (!magazine) return res.status(404).json({ error: 'Magazine not found' });
 
-        if (topic !== undefined) news.topic = topic;
-        if (sub_topic !== undefined) news.sub_topic = sub_topic;
-        if (content !== undefined) news.content = content;
-        if (images !== undefined) news.images = images;
-        if (order_index !== undefined) news.order_index = order_index;
+        // Sort news by order_index
+        magazine.news.sort((a, b) => a.order_index - b.order_index);
 
-        await news.save();
-        res.json(news);
+        res.json(magazine);
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Server error updating news' });
-    }
-});
-
-// Admin: Delete news
-router.delete('/news/:newsId', verifyToken, isAdmin, async (req, res) => {
-    try {
-        const news = await MagazineNews.findByPk(req.params.newsId);
-        if (!news) return res.status(404).json({ error: 'News not found' });
-        
-        await news.destroy();
-        res.json({ message: 'News deleted successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error deleting news' });
+        res.status(500).json({ error: 'Server error fetching magazine' });
     }
 });
 
