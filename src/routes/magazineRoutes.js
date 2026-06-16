@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.express.Router();
+const router = express.Router();
 const { Magazine, MagazineNews } = require('../models');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 
