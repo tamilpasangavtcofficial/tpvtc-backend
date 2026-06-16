@@ -6,9 +6,8 @@ require('mysql2'); // Explicitly required for Vercel's dependency tracer
 const connectToDatabase = async () => {
   try {
     await connectDB();
-    // In serverless, we usually rely on pre-existing tables.
-    // However, if we need to sync, we can do it once.
-    // await sequelize.sync({ force: false });
+    // Sync models to create any new tables (safe: does not drop existing tables)
+    await sequelize.sync({ alter: false, force: false });
   } catch (error) {
     console.error('Initial DB connection failed:', error);
   }
