@@ -9,6 +9,8 @@ const GalleryImage = require('./GalleryImage');
 const Supporter = require('./Supporter');
 
 const Achievement = require('./Achievement');
+const Magazine = require('./Magazine');
+const MagazineNews = require('./MagazineNews');
 
 // Associations
 BookingRequest.belongsTo(EventSlot, { foreignKey: 'event_slot_id' });
@@ -16,6 +18,9 @@ EventSlot.hasMany(BookingRequest, { foreignKey: 'event_slot_id' });
 
 EventSlot.belongsTo(EventSlotImage, { foreignKey: 'slot_image_id' });
 EventSlotImage.hasMany(EventSlot, { foreignKey: 'slot_image_id' });
+
+Magazine.hasMany(MagazineNews, { foreignKey: 'magazine_id', as: 'news', onDelete: 'CASCADE' });
+MagazineNews.belongsTo(Magazine, { foreignKey: 'magazine_id' });
 
 module.exports = {
     UserRole,
@@ -27,5 +32,7 @@ module.exports = {
     HeaderImage,
     GalleryImage,
     Supporter,
-    Achievement
+    Achievement,
+    Magazine,
+    MagazineNews
 };
