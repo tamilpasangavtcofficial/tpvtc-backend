@@ -13,7 +13,7 @@ const Partner = sequelize.define('Partner', {
     },
     vtc_link: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     partner_type: {
         type: DataTypes.STRING,
