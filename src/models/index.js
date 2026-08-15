@@ -11,6 +11,7 @@ const Supporter = require('./Supporter');
 const Achievement = require('./Achievement');
 const Magazine = require('./Magazine');
 const MagazineNews = require('./MagazineNews');
+const Partner = require('./Partner');
 
 // Associations
 BookingRequest.belongsTo(EventSlot, { foreignKey: 'event_slot_id' });
@@ -34,5 +35,6 @@ module.exports = {
     Supporter,
     Achievement,
     Magazine,
-    MagazineNews
+    MagazineNews,
+    Partner
 };

@@ -18,6 +18,7 @@ const imageRoutes = require('./routes/imageRoutes');
 const supporterRoutes = require('./routes/supporterRoutes');
 const achievementRoutes = require('./routes/achievementRoutes');
 const magazineRoutes = require('./routes/magazineRoutes');
+const partnerRoutes = require('./routes/partnerRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tmp', tmpRoutes);
@@ -26,6 +27,7 @@ app.use('/api/images', imageRoutes);
 app.use('/api/supporters', supporterRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/magazines', magazineRoutes);
+app.use('/api/partners', partnerRoutes);
 
 app.get('/', (req, res) => {
     res.send('Tamil Pasanga VTC API is running...');
