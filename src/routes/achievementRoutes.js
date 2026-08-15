@@ -55,9 +55,9 @@ router.post('/update', auth, adminOnly, async (req, res) => {
         const { 
             month, 
             winner_name, winner_role, winner_tmp_id, winner_event_id, winner_dlc,
-            p1_name, p1_role, p1_tmp_id, p1_distance,
-            p2_name, p2_role, p2_tmp_id, p2_distance,
-            p3_name, p3_role, p3_tmp_id, p3_distance,
+            p1_name, p1_role, p1_tmp_id, p1_distance, p1_dlc,
+            p2_name, p2_role, p2_tmp_id, p2_distance, p2_dlc,
+            p3_name, p3_role, p3_tmp_id, p3_distance, p3_dlc,
             published
         } = req.body;
 
@@ -68,18 +68,18 @@ router.post('/update', auth, adminOnly, async (req, res) => {
         if (achievement) {
             await achievement.update({
                 winner_name, winner_role, winner_tmp_id, winner_event_id, winner_dlc,
-                p1_name, p1_role, p1_tmp_id, p1_distance,
-                p2_name, p2_role, p2_tmp_id, p2_distance,
-                p3_name, p3_role, p3_tmp_id, p3_distance,
+                p1_name, p1_role, p1_tmp_id, p1_distance, p1_dlc,
+                p2_name, p2_role, p2_tmp_id, p2_distance, p2_dlc,
+                p3_name, p3_role, p3_tmp_id, p3_distance, p3_dlc,
                 published
             });
         } else {
             achievement = await Achievement.create({
                 month,
                 winner_name, winner_role, winner_tmp_id, winner_event_id, winner_dlc,
-                p1_name, p1_role, p1_tmp_id, p1_distance,
-                p2_name, p2_role, p2_tmp_id, p2_distance,
-                p3_name, p3_role, p3_tmp_id, p3_distance,
+                p1_name, p1_role, p1_tmp_id, p1_distance, p1_dlc,
+                p2_name, p2_role, p2_tmp_id, p2_distance, p2_dlc,
+                p3_name, p3_role, p3_tmp_id, p3_distance, p3_dlc,
                 published
             });
         }
