@@ -227,34 +227,36 @@ router.get('/attending/:event_id', async (req, res) => {
 
 // Setup Official Event Slots & Map (RE-DESIGNED)
 router.post('/official/setup', auth, adminOnly, async (req, res) => {
-    const { sector_id, event_id, slot_url, slot_name, from = 1, to = 20 } = req.body;
+    const { sector_id, event_id, slot_url, slot_name, from = 1, to = 20, custom_slots } = req.body;
     try {
-        const start = parseInt(from);
-        const end = parseInt(to);
         const eventId = parseInt(event_id);
-
-        if (isNaN(start) || isNaN(end) || !slot_url) {
-            return res.status(400).json({ message: 'Invalid setup parameters' });
+        
+        let preciseLots = [];
+        if (custom_slots && Array.isArray(custom_slots) && custom_slots.length > 0) {
+            preciseLots = custom_slots;
+        } else {
+            const start = parseInt(from);
+            const end = parseInt(to);
+            if (isNaN(start) || isNaN(end) || !slot_url) {
+                return res.status(400).json({ message: 'Invalid setup parameters' });
+            }
+            for (let i = start; i <= end; i++) preciseLots.push(i.toString());
         }
-
-        // 1. Prepare the exact slot numbers for this sector
-        const preciseLots = [];
-        for (let i = start; i <= end; i++) preciseLots.push(i.toString());
 
         let sector;
         if (sector_id) {
             // EDIT MODE: Update existing sector by its unique ID
             sector = await EventSlotImage.findByPk(sector_id);
             if (!sector) return res.status(404).json({ message: 'Target sector not found' });
-            await sector.update({ slot_url, slot_name, total_slots: (end - start + 1), event_id: eventId });
+            await sector.update({ slot_url, slot_name, total_slots: preciseLots.length, event_id: eventId });
         } else {
             // NEW MODE: Create or find by properties
             const [newSector, created] = await EventSlotImage.findOrCreate({
                 where: { event_id: eventId, slot_url, slot_name },
-                defaults: { total_slots: (end - start + 1) }
+                defaults: { total_slots: preciseLots.length }
             });
             sector = newSector;
-            if (!created) await sector.update({ total_slots: (end - start + 1) });
+            if (!created) await sector.update({ total_slots: preciseLots.length });
         }
 
         // 2. COLLISION CHECK: Are any of these slots already used by ANOTHER sector in this event?
@@ -281,7 +283,8 @@ router.post('/official/setup', auth, adminOnly, async (req, res) => {
             slot_no: no,
             event_id: eventId,
             slot_image_id: sector.id,
-            booked_by: null
+            // Automatically pre-book if it's a custom slot
+            booked_by: isNaN(parseInt(no)) ? no : null
         }));
 
         await EventSlot.bulkCreate(slotsToCreate);
