@@ -52,7 +52,7 @@ router.post('/find', async (req, res) => {
 // Update or create achievement
 router.post('/update', auth, adminOnly, async (req, res) => {
     try {
-        const { 
+        let { 
             month, 
             winner_name, winner_role, winner_tmp_id, winner_event_id, winner_dlc,
             p1_name, p1_role, p1_tmp_id, p1_distance, p1_dlc,
@@ -60,6 +60,12 @@ router.post('/update', auth, adminOnly, async (req, res) => {
             p3_name, p3_role, p3_tmp_id, p3_distance, p3_dlc,
             published
         } = req.body;
+
+        winner_tmp_id = winner_tmp_id === '' ? null : winner_tmp_id;
+        winner_event_id = winner_event_id === '' ? null : winner_event_id;
+        p1_tmp_id = p1_tmp_id === '' ? null : p1_tmp_id;
+        p2_tmp_id = p2_tmp_id === '' ? null : p2_tmp_id;
+        p3_tmp_id = p3_tmp_id === '' ? null : p3_tmp_id;
 
         // We only want one record for the current month, or just update the latest one.
         // For simplicity, let's see if one for this month exists
