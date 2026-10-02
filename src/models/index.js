@@ -12,6 +12,9 @@ const Achievement = require('./Achievement');
 const Magazine = require('./Magazine');
 const MagazineNews = require('./MagazineNews');
 const Partner = require('./Partner');
+const Album = require('./Album');
+const AlbumImage = require('./AlbumImage');
+const Stat = require('./Stat');
 
 // Associations
 BookingRequest.belongsTo(EventSlot, { foreignKey: 'event_slot_id' });
@@ -22,6 +25,9 @@ EventSlotImage.hasMany(EventSlot, { foreignKey: 'slot_image_id' });
 
 Magazine.hasMany(MagazineNews, { foreignKey: 'magazine_id', as: 'news', onDelete: 'CASCADE' });
 MagazineNews.belongsTo(Magazine, { foreignKey: 'magazine_id' });
+
+Album.hasMany(AlbumImage, { foreignKey: 'album_id', as: 'images', onDelete: 'CASCADE' });
+AlbumImage.belongsTo(Album, { foreignKey: 'album_id' });
 
 module.exports = {
     UserRole,
@@ -36,5 +42,8 @@ module.exports = {
     Achievement,
     Magazine,
     MagazineNews,
-    Partner
+    Partner,
+    Album,
+    AlbumImage,
+    Stat
 };

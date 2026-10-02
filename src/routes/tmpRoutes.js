@@ -118,6 +118,16 @@ router.get('/vtc/members', async (req, res) => {
     }
 });
 
+// Get VTC News (Proxies direct TruckersMP API to bypass CORS)
+router.get('/vtc/news', async (req, res) => {
+    try {
+        const data = await fetchTMP(`/vtc/${VTC_ID}/news`, 'news');
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed', details: err.message });
+    }
+});
+
 // Get VTC Profile
 router.get('/vtc/profile', async (req, res) => {
     try {

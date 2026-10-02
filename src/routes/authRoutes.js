@@ -45,6 +45,88 @@ router.post('/login', async (req, res) => {
     }
 });
 
+const passport = require('passport');
+const SteamStrategy = require('passport-steam').Strategy;
+
+const VTC_ID = 73933; // Tamil Pasanga VTC
+
+passport.use(new SteamStrategy({
+    returnURL: process.env.STEAM_RETURN_URL || 'http://localhost:5000/api/auth/steam/return',
+    realm: process.env.STEAM_REALM || 'http://localhost:5000/',
+    apiKey: process.env.STEAM_API_KEY || '2BD2BAA49A1C50C3A9BDCC7726330EC1' // Optional placeholder, typically in env
+  },
+  function(identifier, profile, done) {
+    // profile contains steam info
+    return done(null, profile);
+  }
+));
+
+// Steam Auth Route
+router.get('/steam', passport.authenticate('steam'));
+
+// Steam Auth Callback
+router.get('/steam/return', 
+  passport.authenticate('steam', { failureRedirect: '/api/auth/steam/fail' }),
+  async (req, res) => {
+    try {
+        const steamId = req.user.id;
+        const steamName = req.user.displayName;
+        const steamAvatar = req.user.photos?.[2]?.value || req.user.photos?.[0]?.value; // get large avatar
+
+        // 1. Fetch TruckersMP profile
+        const tmpResponse = await fetch(`https://api.truckersmp.com/v2/player/${steamId}`);
+        const tmpData = await tmpResponse.json();
+
+        if (tmpData.error) {
+            return res.send(`<script>window.opener.postMessage({ error: 'TruckersMP account not found for this Steam ID.' }, '*'); window.close();</script>`);
+        }
+
+        const player = tmpData.response;
+
+        // 2. Verify VTC Membership
+        if (!player.vtc || player.vtc.id !== VTC_ID) {
+            return res.send(`<script>window.opener.postMessage({ error: 'You are not a member of Tamil Pasanga VTC on TruckersMP.' }, '*'); window.close();</script>`);
+        }
+
+        // 3. Generate JWT Token directly from TMP profile (No local DB required)
+        // We will default the role to 'Driver' for now, but you can map TMP roles here if needed.
+        const token = jwt.sign(
+            { 
+                id: player.id, 
+                username: player.name, 
+                role: 'driver',
+                steam_id: steamId
+            },
+            process.env.JWT_SECRET || 'secret'
+        );
+
+        // 4. Send token back to popup opener
+        const payload = JSON.stringify({
+            token,
+            user: {
+                id: player.id,
+                username: player.name,
+                role: 'driver',
+                avatar_url: player.avatar || steamAvatar,
+                steam_id: steamId
+            }
+        });
+
+        res.send(`<script>
+            window.opener.postMessage({ success: true, payload: ${payload} }, '*');
+            window.close();
+        </script>`);
+        
+    } catch (err) {
+        console.error('Steam login error:', err);
+        res.send(`<script>window.opener.postMessage({ error: 'Server error during Steam authentication.' }, '*'); window.close();</script>`);
+    }
+});
+
+router.get('/steam/fail', (req, res) => {
+    res.send(`<script>window.opener.postMessage({ error: 'Steam authentication failed.' }, '*'); window.close();</script>`);
+});
+
 const { auth, adminOnly } = require('../middleware/auth');
 
 // Get all users (Admin only)
