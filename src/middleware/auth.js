@@ -17,7 +17,7 @@ const auth = (req, res, next) => {
 };
 
 const adminOnly = (req, res, next) => {
-    if (req.user && ['developer', 'founder', 'event team', 'media team', 'staff'].includes(req.user.role?.toLowerCase())) {
+    if (req.user && ['developer', 'founder', 'managing director', 'event team', 'media team', 'staff'].includes(req.user.role?.toLowerCase())) {
         next();
     } else {
         res.status(403).json({ message: 'Access denied' });

@@ -7,12 +7,13 @@ const router = express.Router();
 router.get('/', async (req, res) => {
     try {
         const supporters = await Supporter.findAll({
-            attributes: ['id', 'name', 'truckersmp_id', 'evidence', 'created_at'],
+            attributes: ['id', 'name', 'truckersmp_id', 'amount', 'evidence', 'created_at'],
             order: [['created_at', 'DESC']]
         });
         res.json(supporters);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch supporters' });
+        console.error("SUPPORTER FETCH ERROR:", err);
+        res.status(500).json({ error: 'Failed to fetch supporters', details: err.message });
     }
 });
 

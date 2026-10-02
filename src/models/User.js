@@ -13,9 +13,19 @@ const User = sequelize.define('User', {
         allowNull: false,
         unique: true
     },
+    steam_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true
+    },
+    tmp_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        unique: true
+    },
     email: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true,
         validate: {
             isEmail: true
@@ -23,7 +33,11 @@ const User = sequelize.define('User', {
     },
     password: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
+    },
+    avatar_url: {
+        type: DataTypes.STRING,
+        allowNull: true
     },
     last_login_at: {
         type: DataTypes.DATE
